@@ -10,7 +10,10 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name='django-flexible-permissions',
     version='1.0.0',
-    packages=['flexible_permissions'],
+    packages=[
+        'flexible_permissions',
+        'flexible_permissions.migrations',
+    ],
     include_package_data=True,
     license='MIT License',
     description=(

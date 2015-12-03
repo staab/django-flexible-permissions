@@ -18,22 +18,12 @@ class Migration(migrations.Migration):
                 ('role', models.CharField(max_length=255)),
                 ('agent_id', models.PositiveIntegerField(null=True, blank=True)),
                 ('target_id', models.PositiveIntegerField()),
-                ('agent_type', models.ForeignKey(related_name='+', on_delete=django.db.models.deletion.PROTECT, blank=True, to='contenttypes.ContentType', null=True)),
-                ('target_type', models.ForeignKey(related_name='+', on_delete=django.db.models.deletion.PROTECT, to='contenttypes.ContentType')),
+                ('agent_type', models.ForeignKey(related_name='+', on_delete=models.deletion.PROTECT, blank=True, to='contenttypes.ContentType', null=True)),
+                ('target_type', models.ForeignKey(related_name='+', on_delete=models.deletion.PROTECT, to='contenttypes.ContentType')),
             ],
         ),
         migrations.AlterUniqueTogether(
             name='permission',
             unique_together=set([('role', 'agent_type', 'agent_id', 'target_type', 'target_id')]),
-        ),
-        migrations.AlterField(
-            model_name='permission',
-            name='agent_type',
-            field=models.ForeignKey(related_name='+', on_delete=django.db.models.deletion.PROTECT, blank=True, to='contenttypes.ContentType', null=True),
-        ),
-        migrations.AlterField(
-            model_name='permission',
-            name='target_type',
-            field=models.ForeignKey(related_name='+', on_delete=django.db.models.deletion.PROTECT, to='contenttypes.ContentType'),
         ),
     ]
