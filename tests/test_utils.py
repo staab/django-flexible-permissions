@@ -1,7 +1,7 @@
 from django.test import TestCase
 from flexible_permissions._utils import (
-    NOFILTER,
-    ISNULL,
+    ANY,
+    NULL,
     is_plural,
     identity,
     ensure_plural,
@@ -51,8 +51,8 @@ class UtilsTestCase(TestCase):
 
     def test_is_value(self):
         self.assertEqual(True, is_value('whatever'))
-        self.assertEqual(False, is_value(NOFILTER))
-        self.assertEqual(False, is_value(ISNULL))
+        self.assertEqual(False, is_value(ANY))
+        self.assertEqual(False, is_value(NULL))
 
     def test_normalize_value(self):
         self.assertEqual(13, normalize_value(3, lambda x, y: x + y, 10))
@@ -66,21 +66,21 @@ class UtilsTestCase(TestCase):
         role = 'zoo.admin'
         exhibit = Exhibit.objects.first()
 
-        kwargs = get_single_crud_kwargs(role, NOFILTER, NOFILTER)
+        kwargs = get_single_crud_kwargs(role, ANY, ANY)
         self.assertEqual(kwargs['role'], role)
         self.assertNotIn('agent_id', kwargs)
         self.assertNotIn('agent_type', kwargs)
         self.assertNotIn('target_id', kwargs)
         self.assertNotIn('target_type', kwargs)
 
-        kwargs = get_single_crud_kwargs(NOFILTER, exhibit, NOFILTER)
+        kwargs = get_single_crud_kwargs(ANY, exhibit, ANY)
         self.assertNotIn('role', kwargs)
         self.assertEqual(kwargs['agent_id'], exhibit.id)
         self.assertIn('agent_type', kwargs)
         self.assertNotIn('target_id', kwargs)
         self.assertNotIn('target_type', kwargs)
 
-        kwargs = get_single_crud_kwargs(NOFILTER, NOFILTER, exhibit)
+        kwargs = get_single_crud_kwargs(ANY, ANY, exhibit)
         self.assertNotIn('role', kwargs)
         self.assertNotIn('agent_id', kwargs)
         self.assertNotIn('agent_type', kwargs)
@@ -103,9 +103,9 @@ class UtilsTestCase(TestCase):
         self.assertEqual(0, Permission.objects.filter(query).count())
 
         # It gets the one entry with null agent
-        query = get_multi_crud_query(role='zoo.visitor', target=NOFILTER)
+        query = get_multi_crud_query(role='zoo.visitor', target=ANY)
         self.assertEqual(1, Permission.objects.filter(query).count())
 
         # It filters agents and targets properly
-        query = get_multi_crud_query(role=NOFILTER, agent=admin, target=zoo)
+        query = get_multi_crud_query(role=ANY, agent=admin, target=zoo)
         self.assertEqual(1, Permission.objects.filter(query).count())

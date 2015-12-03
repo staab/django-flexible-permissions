@@ -9,8 +9,8 @@ from flexible_permissions.relations import (
 )
 from flexible_permissions.roles import actions_to_roles
 from flexible_permissions._utils import (
-    NOFILTER,
-    ISNULL,
+    ANY,
+    NULL,
     ensure_plural,
     generic_in,
     get_key,
@@ -22,11 +22,11 @@ from flexible_permissions._utils import (
 
 def define_filter(key):
     def decorator(fn):
-        def wrapped(queryset, value=NOFILTER, prefix=None):
-            if value is NOFILTER:
+        def wrapped(queryset, value=ANY, prefix=None):
+            if value is ANY:
                 return Q()
 
-            if value is ISNULL:
+            if value is NULL:
                 return filter_isnull(key, prefix)
 
             # The fn should return a Q object.
@@ -64,9 +64,9 @@ class PermQuerySet(QuerySet):
 
     def _get_query(
         self,
-        role=NOFILTER,
-        agent=NOFILTER,
-        target=NOFILTER,
+        role=ANY,
+        agent=ANY,
+        target=ANY,
         prefix=None
     ):
         """
@@ -110,14 +110,13 @@ class PermQuerySet(QuerySet):
             self.none()
         )
 
-    def _query_perms(
-        self,
+    def _query_perms(self,
         roles,
         get_related_prefixes,
         perms_name,
         force_separate,
-        agent=NOFILTER,
-        target=NOFILTER
+        agent=ANY,
+        target=ANY
     ):
         """
         This is an abstraction used by subclasses to query permissions.
@@ -192,8 +191,8 @@ class PermTargetQuerySet(PermQuerySet):
 
     def for_role(
         self,
-        roles=NOFILTER,
-        agent=NOFILTER,
+        roles=ANY,
+        agent=ANY,
         infer_agents=True,
         force_separate=False
     ):
@@ -215,7 +214,7 @@ class PermTargetQuerySet(PermQuerySet):
             )
         )
 
-    def for_action(self, actions=NOFILTER, *args, **kwargs):
+    def for_action(self, actions=ANY, *args, **kwargs):
         roles = actions_to_roles(self._prefix_actions(actions))
         return self.for_role(roles, *args, **kwargs)
 
@@ -226,7 +225,7 @@ class PermAgentQuerySet(PermQuerySet):
     via the permissions table. The methods should be read as
     "Get an agent with role x and target y."
     """
-    def with_role(self, roles=NOFILTER, target=NOFILTER, force_separate=False):
+    def with_role(self, roles=ANY, target=ANY, force_separate=False):
         """
         This filters permission agents by the given target.
         """
@@ -238,6 +237,6 @@ class PermAgentQuerySet(PermQuerySet):
             target=target
         )
 
-    def with_action(self, actions=NOFILTER, *args, **kwargs):
+    def with_action(self, actions=ANY, *args, **kwargs):
         roles = normalize_value(actions, actions_to_roles)
         return self.with_role(roles, *args, **kwargs)

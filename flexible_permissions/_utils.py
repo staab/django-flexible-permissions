@@ -9,11 +9,11 @@ not filtering and constraining to isnull
 """
 
 
-class NOFILTER(object):
+class ANY(object):
     pass
 
 
-class ISNULL(object):
+class NULL(object):
     pass
 
 
@@ -72,7 +72,7 @@ def filter_isnull(key, prefix=None):
 
 
 def is_value(value):
-    return value not in [ISNULL, NOFILTER]
+    return value not in [NULL, ANY]
 
 
 def normalize_value(value, fn=ensure_plural, *args, **kwargs):
@@ -103,12 +103,12 @@ def get_single_crud_kwargs(role, agent, target):
     """
     kwargs = {}
 
-    if role is ISNULL:
+    if role is NULL:
         kwargs['role__isnull'] = True
     elif is_value(role):
         kwargs['role'] = role
 
-    if agent is ISNULL:
+    if agent is NULL:
         kwargs['agent_id__isnull'] = True
     elif is_value(agent):
         kwargs.update({
@@ -116,7 +116,7 @@ def get_single_crud_kwargs(role, agent, target):
             'agent_id': agent.id
         })
 
-    if target is ISNULL:
+    if target is NULL:
         kwargs['target_id__isnull'] = True
     elif is_value(target):
         kwargs.update({
@@ -127,24 +127,24 @@ def get_single_crud_kwargs(role, agent, target):
     return kwargs
 
 
-def get_multi_crud_query(role=ISNULL, agent=ISNULL, target=ISNULL):
+def get_multi_crud_query(role=NULL, agent=NULL, target=NULL):
     """
     Gets a query object for the given role, agent, and target. Any of the
     three may be plural; a generic_in will be used.
     """
     query = Q()
 
-    if role is ISNULL:
+    if role is NULL:
         query = query & Q(role__isnull=True)
     elif is_value(role):
         query = query & Q(role__in=ensure_plural(role))
 
-    if agent is ISNULL:
+    if agent is NULL:
         query = query & Q(agent_id__isnull=True)
     elif is_value(agent):
         query = query & generic_in('agent', ensure_plural(agent))
 
-    if target is ISNULL:
+    if target is NULL:
         query = query & Q(target_id__isnull=True)
     elif is_value(target):
         query = query & generic_in('target', ensure_plural(target))

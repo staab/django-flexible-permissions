@@ -1,6 +1,6 @@
 from django.test import TestCase
 from flexible_permissions.agents import normalize_agent
-from flexible_permissions.shortcuts import ISNULL
+from flexible_permissions.shortcuts import NULL
 
 from tests.models import User, Group, Exhibit
 from tests.utils import create_test_models
@@ -30,5 +30,5 @@ class AgentsTestCase(TestCase):
         self.assertEqual(1, result.count())
 
     def test_null_agent(self):
-        results = Exhibit.objects.for_action('visit', ISNULL)
+        results = Exhibit.objects.for_action('visit', NULL)
         self.assertEqual(2, results.count())

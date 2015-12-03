@@ -1,7 +1,7 @@
-# Include NOFILTER and ISNULL as part of the public api
+# Include ANY and NULL as part of the public api
 from flexible_permissions._utils import (
-    NOFILTER,
-    ISNULL,
+    ANY,
+    NULL,
     get_multi_crud_query,
     get_single_crud_kwargs,
 )
@@ -60,5 +60,5 @@ def assign_role(role, agent, target):
     Removes role for target from all other agents and assigns it to the
     given agent.
     """
-    remove_perm(role, NOFILTER, target)
+    remove_perm(role, ANY, target)
     add_perm(role, agent, target)
