@@ -60,3 +60,35 @@ class TargetTestCase(TestCase):
 class AgentTestCase(TestCase):
     def setUp(self):
         create_test_models()
+
+    def test_with_role_no_filter(self):
+        self.assertEqual(3, User.objects.with_action().count())
+
+    def test_with_role_filter_role(self):
+        # It does an OR On role
+        results = User.objects.with_role(['zoo.admin', 'invalid'])
+        self.assertEqual(1, results.count())
+
+        # It successfully filters out results
+        results = User.objects.with_role('invalid')
+        self.assertEqual(0, results.count())
+
+    def test_with_role_filter_target(self):
+        zoo = Zoo.objects.first()
+        admin = User.objects.get(name='admin user')
+
+        # Normal call
+        results = User.objects.with_role('zoo.admin', zoo)
+        self.assertEqual(1, results.count())
+
+        # With any role
+        results = User.objects.with_role(target=zoo)
+        self.assertEqual(1, results.count())
+
+        # Invalid role
+        results = User.objects.with_role('invalid', zoo)
+        self.assertEqual(0, results.count())
+
+        # Invalid target
+        results = User.objects.with_role('zoo.admin', admin)
+        self.assertEqual(0, results.count())

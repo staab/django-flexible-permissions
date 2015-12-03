@@ -1,9 +1,14 @@
 from django.test import TestCase
 from flexible_permissions._utils import (
     NOFILTER,
+    ISNULL,
     is_plural,
     identity,
     ensure_plural,
+    get_key,
+    filter_isnull,
+    is_value,
+    normalize_value,
     generic_in,
     get_single_crud_kwargs,
     get_multi_crud_query,
@@ -29,6 +34,28 @@ class UtilsTestCase(TestCase):
     def test_ensure_plural(self):
         self.assertEqual([1], ensure_plural(1))
         self.assertEqual([1], ensure_plural([1]))
+
+    def test_get_key(self):
+        self.assertEqual('key', get_key('key'))
+        self.assertEqual('x__key__y', get_key('key', 'x', 'y'))
+
+    def test_filter_isnull(self):
+        results = Permission.objects.filter(filter_isnull('role'))
+        self.assertEqual(0, results.count())
+
+        results = Permission.objects.filter(filter_isnull('agent'))
+        self.assertEqual(1, results.count())
+
+        results = Permission.objects.filter(filter_isnull('target'))
+        self.assertEqual(0, results.count())
+
+    def test_is_value(self):
+        self.assertEqual(True, is_value('whatever'))
+        self.assertEqual(False, is_value(NOFILTER))
+        self.assertEqual(False, is_value(ISNULL))
+
+    def test_normalize_value(self):
+        self.assertEqual(13, normalize_value(3, lambda x, y: x + y, 10))
 
     def test_generic_in(self):
         exhibits = Exhibit.objects.all()

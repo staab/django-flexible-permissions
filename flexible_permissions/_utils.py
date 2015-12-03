@@ -55,6 +55,30 @@ Generic query building functions
 """
 
 
+def get_key(key, prefix=None, suffix=None):
+    prefix = "%s__" % prefix if prefix is not None else ''
+    suffix = "__%s" % suffix if suffix is not None else ''
+
+    return "%s%s%s" % (prefix, key, suffix)
+
+
+def filter_isnull(key, prefix=None):
+    # Gotta add id to avoid reverse relation errors
+    if key != 'role':
+        key += '_id'
+
+    # Return just a null check
+    return Q(**{get_key(key, prefix, 'isnull'): True})
+
+
+def is_value(value):
+    return value not in [ISNULL, NOFILTER]
+
+
+def normalize_value(value, fn=ensure_plural, *args, **kwargs):
+    return fn(value, *args, **kwargs) if is_value(value) else value
+
+
 def generic_in(key, items):
     """
     Creates a the equivalent of an __in query for the given items.

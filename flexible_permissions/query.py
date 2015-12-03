@@ -12,32 +12,12 @@ from flexible_permissions._utils import (
     NOFILTER,
     ISNULL,
     ensure_plural,
-    generic_in
+    generic_in,
+    get_key,
+    filter_isnull,
+    is_value,
+    normalize_value,
 )
-
-
-def get_key(key, prefix=None, suffix=None):
-    prefix = "%s__" % prefix if prefix is not None else ''
-    suffix = "__%s" % suffix if suffix is not None else ''
-
-    return "%s%s%s" % (prefix, key, suffix)
-
-
-def filter_isnull(key, prefix):
-    # Gotta add id to avoid reverse relation errors
-    if key != 'role':
-        key += '_id'
-
-    # Return just a null check
-    return Q(**{get_key(key, prefix, 'isnull'): True})
-
-
-def is_value(value):
-    return value not in [ISNULL, NOFILTER]
-
-
-def normalize_value(value, fn=ensure_plural, *args, **kwargs):
-    return fn(value, *args, **kwargs) if is_value(value) else value
 
 
 def define_filter(key):
@@ -64,9 +44,6 @@ class PermQuerySet(QuerySet):
     """
 
     def _get_filter(self, key, value):
-        if value is ISNULL:
-            return Q()
-
         return generic_in(key, ensure_plural(value))
 
     @define_filter('role')
@@ -262,4 +239,5 @@ class PermAgentQuerySet(PermQuerySet):
         )
 
     def with_action(self, actions=NOFILTER, *args, **kwargs):
-        return self.with_role(actions_to_roles(actions), *args, **kwargs)
+        roles = normalize_value(actions, actions_to_roles)
+        return self.with_role(roles, *args, **kwargs)
