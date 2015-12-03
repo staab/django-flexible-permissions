@@ -1,4 +1,4 @@
-from flexible_permissions.utils import NULL, normalize_value
+from flexible_permissions._utils import ensure_plural
 
 _agent_registry = {}
 
@@ -13,20 +13,12 @@ def register_agent(cls, get_related_agents):
     _agent_registry[cls] = get_related_agents
 
 
-def normalize_agent(agents, **kwargs):
+def normalize_agent(agents, infer_agents=True):
     """
     Turn an agent into a list of equivalent agents
     """
-    infer_agents = kwargs.pop('infer_agents', True)
-
-    agents = normalize_value(agents)
-
-    # Agent being NULL is special. That means match on isnull instead.
-    if len(agents) == 1 and agents[0] is NULL:
-        return NULL
-
     result = []
-    for agent in agents:
+    for agent in ensure_plural(agents):
         # Delegate agent calculation to registered function
         if infer_agents:
             if agent.__class__ not in _agent_registry:

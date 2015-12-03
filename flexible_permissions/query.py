@@ -1,8 +1,6 @@
-from django.contrib.contenttypes.fields import GenericRelation
-from django.db.models import Q, QuerySet, Model
+from django.db.models import Q, QuerySet
 
 from itertools import chain
-import pydash
 
 from flexible_permissions.agents import normalize_agent
 from flexible_permissions.models import Permission
@@ -11,10 +9,10 @@ from flexible_permissions.relations import (
     get_related_agent_prefixes,
 )
 from flexible_permissions.roles import actions_to_roles
-from flexible_permissions.utils import (
-    OMIT,
-    NULL,
-    normalize_value,
+from flexible_permissions._utils import (
+    NOFILTER,
+    ISNULL,
+    ensure_plural,
     generic_in
 )
 
@@ -37,12 +35,11 @@ def filter_isnull(key, prefix):
 
 def define_filter(key):
     def decorator(fn):
-        def wrapped(queryset, value=OMIT, prefix=None):
-            if value is OMIT:
+        def wrapped(queryset, value=NOFILTER, prefix=None):
+            if value is NOFILTER:
                 return Q()
 
-            # If value isn't OMIT, but it's empty, it's NULL. We're done.
-            if value == [] or value is NULL:
+            if value is ISNULL:
                 return filter_isnull(key, prefix)
 
             # The fn should return a Q object.
@@ -53,20 +50,17 @@ def define_filter(key):
     return decorator
 
 
-class PermProxyQuerySet(QuerySet):
+class PermQuerySet(QuerySet):
 
     """
     Query Building stuff
     """
 
     def _get_filter(self, key, value):
-        value = normalize_value(value)
-
-        # If we didn't have any values, return an empty query
-        if len(value) == 0:
+        if value is ISNULL:
             return Q()
 
-        return generic_in(key, value)
+        return generic_in(key, ensure_plural(value))
 
     @define_filter('role')
     def _get_role_query(self, role, prefix):
@@ -84,7 +78,7 @@ class PermProxyQuerySet(QuerySet):
     def _get_target_query(self, target, prefix):
         return self._get_filter(get_key('target', prefix), target)
 
-    def _get_query(self, role=OMIT, agent=OMIT, target=OMIT, prefix=None):
+    def _get_query(self, role=NOFILTER, agent=NOFILTER, target=NOFILTER, prefix=None):
         """
         This constructs a query for the filter on permissions.
         """
@@ -132,8 +126,8 @@ class PermProxyQuerySet(QuerySet):
         get_related_prefixes,
         perms_name,
         force_separate,
-        agent=OMIT,
-        target=OMIT
+        agent=NOFILTER,
+        target=NOFILTER
     ):
         """
         This is an abstraction used by subclasses to query permissions.
@@ -147,7 +141,8 @@ class PermProxyQuerySet(QuerySet):
         queryset to be retrieved is the thing not provided.
         """
         # Normalize roles
-        roles = normalize_value(roles)
+        if roles is not ISNULL:
+            roles = ensure_plural(roles)
 
         # Get all possible related queries we're doing
         related_prefixes = get_related_prefixes(self, perms_name, *roles)
@@ -174,7 +169,7 @@ class PermProxyQuerySet(QuerySet):
         return results
 
 
-class PermProxyTargetQuerySet(PermProxyQuerySet):
+class PermTargetQuerySet(PermQuerySet):
     """
     This is a queryset class that exposes methods to get a related target
     via the permissions table. The methods should be read as
@@ -189,7 +184,7 @@ class PermProxyTargetQuerySet(PermProxyQuerySet):
         configuration when registering role/action mappings.
         """
         result = []
-        for value in normalize_value(values):
+        for value in ensure_plural(values):
             assert "." not in value, (
                 "Prefixes are inferred. Register this with its own actions."
             )
@@ -200,8 +195,8 @@ class PermProxyTargetQuerySet(PermProxyQuerySet):
 
     def for_role(
         self,
-        roles=OMIT,
-        agent=OMIT,
+        roles=NOFILTER,
+        agent=NOFILTER,
         infer_agents=True,
         force_separate=False
     ):
@@ -212,16 +207,8 @@ class PermProxyTargetQuerySet(PermProxyQuerySet):
         authority of any related agents, set it to false.
         """
         # Get any derivative agents
-        agent = normalize_agent(agent, infer_agents=infer_agents)
-
-        # If we have any superusers, they get to use anything they want
-        supr = pydash.find(
-            agent,
-            lambda agent: getattr(agent, 'is_superuser', None)
-        )
-
-        if supr:
-            return self.all()
+        if agent is not ISNULL:
+            agent = normalize_agent(agent, infer_agents=infer_agents)
 
         return self._query_perms(
             roles=roles,
@@ -231,18 +218,18 @@ class PermProxyTargetQuerySet(PermProxyQuerySet):
             agent=agent
         )
 
-    def for_action(self, actions=OMIT, *args, **kwargs):
+    def for_action(self, actions=NOFILTER, *args, **kwargs):
         roles = actions_to_roles(self._prefix_actions(actions))
         return self.for_role(roles, *args, **kwargs)
 
 
-class PermProxyAgentQuerySet(PermProxyQuerySet):
+class PermAgentQuerySet(PermQuerySet):
     """
     This is a queryset class that exposes methods to get a related agent
     via the permissions table. The methods should be read as
     "Get an agent with role x and target y."
     """
-    def with_role(self, roles=OMIT, target=OMIT, force_separate=False):
+    def with_role(self, roles=NOFILTER, target=NOFILTER, force_separate=False):
         """
         This filters permission agents by the given target.
         """
@@ -254,31 +241,5 @@ class PermProxyAgentQuerySet(PermProxyQuerySet):
             target=target
         )
 
-    def with_action(self, actions=OMIT, *args, **kwargs):
+    def with_action(self, actions=NOFILTER, *args, **kwargs):
         return self.with_role(actions_to_roles(actions), *args, **kwargs)
-
-
-class PermProxyTarget(Model):
-    target_perms = GenericRelation(
-        Permission,
-        object_id_field='target_id',
-        content_type_field='target_type'
-    )
-
-    objects = PermProxyTargetQuerySet.as_manager()
-
-    class Meta:
-        abstract = True
-
-
-class PermProxyAgent(Model):
-    agent_perms = GenericRelation(
-        Permission,
-        object_id_field='agent_id',
-        content_type_field='agent_type'
-    )
-
-    objects = PermProxyAgentQuerySet.as_manager()
-
-    class Meta:
-        abstract = True

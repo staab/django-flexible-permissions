@@ -1,4 +1,4 @@
-from flexible_permissions.utils import normalize_value
+from flexible_permissions._utils import ensure_plural
 
 """
 Maps of roles to actions
@@ -39,10 +39,10 @@ def register_role(name, actions):
 
 
 def roles_to_actions(roles):
-    roles = normalize_value(roles)
+    roles = ensure_plural(roles)
     return list(set([action for role in roles for action in ROLES[role]]))
 
 
 def actions_to_roles(actions):
-    actions = normalize_value(actions)
+    actions = ensure_plural(actions)
     return list(set([role for action in actions for role in ACTIONS[action]]))

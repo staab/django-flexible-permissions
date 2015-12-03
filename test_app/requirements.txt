@@ -1,2 +1,0 @@
-Django==1.8.6
-../dist/django-flexible-permissions-1.0.0.tar.gz
