@@ -19,8 +19,11 @@ class TestsConfig(AppConfig):
         staff_actions = ['animal.feed', 'exhibit.clean']
         visitor_actions = ['zoo.visit', 'exhibit.visit', 'animal.see']
 
-        register_role('zoo.admin', admin_actions + staff_actions)
-        register_role('exhibit.staff', staff_actions)
+        register_role(
+            'zoo.admin',
+            admin_actions + staff_actions + visitor_actions
+        )
+        register_role('exhibit.staff', staff_actions + visitor_actions)
         register_role('zoo.visitor', visitor_actions)
 
         """

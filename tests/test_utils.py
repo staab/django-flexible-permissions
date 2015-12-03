@@ -66,21 +66,21 @@ class UtilsTestCase(TestCase):
         role = 'zoo.admin'
         exhibit = Exhibit.objects.first()
 
-        kwargs = get_single_crud_kwargs(role, None, None)
+        kwargs = get_single_crud_kwargs(role, NOFILTER, NOFILTER)
         self.assertEqual(kwargs['role'], role)
         self.assertNotIn('agent_id', kwargs)
         self.assertNotIn('agent_type', kwargs)
         self.assertNotIn('target_id', kwargs)
         self.assertNotIn('target_type', kwargs)
 
-        kwargs = get_single_crud_kwargs(None, exhibit, None)
+        kwargs = get_single_crud_kwargs(NOFILTER, exhibit, NOFILTER)
         self.assertNotIn('role', kwargs)
         self.assertEqual(kwargs['agent_id'], exhibit.id)
         self.assertIn('agent_type', kwargs)
         self.assertNotIn('target_id', kwargs)
         self.assertNotIn('target_type', kwargs)
 
-        kwargs = get_single_crud_kwargs(None, None, exhibit)
+        kwargs = get_single_crud_kwargs(NOFILTER, NOFILTER, exhibit)
         self.assertNotIn('role', kwargs)
         self.assertNotIn('agent_id', kwargs)
         self.assertNotIn('agent_type', kwargs)

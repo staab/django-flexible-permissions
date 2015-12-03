@@ -17,8 +17,7 @@ def get_perms(*args, **kwargs):
     Gets all Permissions matching the query.
     Accepts role, agent, and target kwargs.
     """
-    query_kwargs = get_multi_crud_query(*args, **kwargs)
-    return Permission.objects.filter(**query_kwargs)
+    return Permission.objects.filter(get_multi_crud_query(*args, **kwargs))
 
 
 """

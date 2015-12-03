@@ -103,16 +103,22 @@ def get_single_crud_kwargs(role, agent, target):
     """
     kwargs = {}
 
-    if role:
+    if role is ISNULL:
+        kwargs['role__isnull'] = True
+    elif is_value(role):
         kwargs['role'] = role
 
-    if agent:
+    if agent is ISNULL:
+        kwargs['agent_id__isnull'] = True
+    elif is_value(agent):
         kwargs.update({
             'agent_type': ContentType.objects.get_for_model(agent),
             'agent_id': agent.id
         })
 
-    if target:
+    if target is ISNULL:
+        kwargs['target_id__isnull'] = True
+    elif is_value(target):
         kwargs.update({
             'target_type': ContentType.objects.get_for_model(target),
             'target_id': target.id
@@ -130,17 +136,17 @@ def get_multi_crud_query(role=ISNULL, agent=ISNULL, target=ISNULL):
 
     if role is ISNULL:
         query = query & Q(role__isnull=True)
-    elif role is not NOFILTER:
+    elif is_value(role):
         query = query & Q(role__in=ensure_plural(role))
 
     if agent is ISNULL:
         query = query & Q(agent_id__isnull=True)
-    elif agent is not NOFILTER:
+    elif is_value(agent):
         query = query & generic_in('agent', ensure_plural(agent))
 
     if target is ISNULL:
         query = query & Q(target_id__isnull=True)
-    elif target is not NOFILTER:
+    elif is_value(target):
         query = query & generic_in('target', ensure_plural(target))
 
     return query
