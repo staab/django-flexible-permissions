@@ -1,4 +1,4 @@
-from permissions.utils import NULL, normalize_value
+from flexible_permissions.utils import NULL, normalize_value
 
 _agent_registry = {}
 

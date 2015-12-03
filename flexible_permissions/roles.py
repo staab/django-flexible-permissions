@@ -1,4 +1,4 @@
-from permissions.utils import normalize_value
+from flexible_permissions.utils import normalize_value
 
 """
 Maps of roles to actions

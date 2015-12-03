@@ -4,14 +4,14 @@ from django.db.models import Q, QuerySet, Model
 from itertools import chain
 import pydash
 
-from permissions.agents import normalize_agent
-from permissions.models import Permission
-from permissions.relations import (
+from flexible_permissions.agents import normalize_agent
+from flexible_permissions.models import Permission
+from flexible_permissions.relations import (
     get_related_target_prefixes,
     get_related_agent_prefixes,
 )
-from permissions.roles import actions_to_roles
-from permissions.utils import (
+from flexible_permissions.roles import actions_to_roles
+from flexible_permissions.utils import (
     OMIT,
     NULL,
     normalize_value,

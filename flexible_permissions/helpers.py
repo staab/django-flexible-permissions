@@ -2,8 +2,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import IntegrityError
 from django.db.models import Q
 
-from permissions.utils import OMIT, NULL, generic_in, normalize_value
-from permissions.models import Permission
+from flexible_permissions.utils import OMIT, NULL, generic_in, normalize_value
+from flexible_permissions.models import Permission
 
 
 def _get_single_crud_kwargs(role, agent, target):
