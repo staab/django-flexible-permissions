@@ -2,18 +2,6 @@ from django.db import models
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 
-from tabulate import tabulate
-
-NB = {'null': True, 'blank': True}
-
-
-class PermissionQuerySet(models.QuerySet):
-    def table(self):
-        return tabulate([[
-            perm.role, perm.agent, perm.target]
-            for perm in self
-        ])
-
 
 class Permission(models.Model):
     role = models.CharField(max_length=255)
@@ -22,9 +10,10 @@ class Permission(models.Model):
         ContentType,
         related_name='+',
         on_delete=models.PROTECT,
-        **NB
+        null=True,
+        blank=True
     )
-    agent_id = models.PositiveIntegerField(**NB)
+    agent_id = models.PositiveIntegerField(null=True, blank=True)
     agent = GenericForeignKey('agent_type', 'agent_id')
 
     target_type = models.ForeignKey(
@@ -34,8 +23,6 @@ class Permission(models.Model):
     )
     target_id = models.PositiveIntegerField()
     target = GenericForeignKey('target_type', 'target_id')
-
-    objects = PermissionQuerySet.as_manager()
 
     class Meta:
         unique_together = [
