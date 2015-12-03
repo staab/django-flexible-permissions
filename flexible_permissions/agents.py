@@ -19,11 +19,11 @@ def normalize_agent(agents, infer_agents=True):
     """
     result = []
     for agent in ensure_plural(agents):
+        if agent.__class__ not in _agent_registry:
+            raise KeyError("%s is not registered." % agent.__class__)
+
         # Delegate agent calculation to registered function
         if infer_agents:
-            if agent.__class__ not in _agent_registry:
-                raise KeyError("%s is not registered." % agent.__class__)
-
             result += list(_agent_registry[agent.__class__](agent))
         else:
             result.append(agent)

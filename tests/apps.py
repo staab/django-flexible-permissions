@@ -3,7 +3,7 @@ from flexible_permissions.agents import register_agent
 from flexible_permissions.roles import register_role
 from flexible_permissions.relations import register_relation
 
-from tests.models import User, Group, Zoo, Cage, Animal
+from tests.models import User, Group, Zoo, Exhibit, Animal
 
 
 class TestsConfig(AppConfig):
@@ -15,12 +15,12 @@ class TestsConfig(AppConfig):
         Register roles
         """
 
-        admin_actions = ['zoo.open', 'cage.create']
-        staff_actions = ['animal.feed', 'cage.clean']
-        visitor_actions = ['zoo.visit', 'cage.visit', 'animal.see']
+        admin_actions = ['zoo.open', 'exhibit.create']
+        staff_actions = ['animal.feed', 'exhibit.clean']
+        visitor_actions = ['zoo.visit', 'exhibit.visit', 'animal.see']
 
         register_role('zoo.admin', admin_actions + staff_actions)
-        register_role('cage.staff', staff_actions)
+        register_role('exhibit.staff', staff_actions)
         register_role('zoo.visitor', visitor_actions)
 
         """
@@ -28,11 +28,11 @@ class TestsConfig(AppConfig):
         """
 
         register_relation(Animal, {
-            'cage': 'cage',
-            'zoo': 'cage__zoo'
+            'exhibit': 'exhibit',
+            'zoo': 'exhibit__zoo'
         })
 
-        register_relation(Cage, {
+        register_relation(Exhibit, {
             'zoo': 'zoo'
         })
 
@@ -40,5 +40,5 @@ class TestsConfig(AppConfig):
         Register Agents
         """
 
-        register_agent(User, lambda user: [user] + [user.group_set.all()])
+        register_agent(User, lambda user: [user] + list(user.group_set.all()))
         register_agent(Group, lambda group: [group])

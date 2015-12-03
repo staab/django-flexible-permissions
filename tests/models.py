@@ -16,9 +16,9 @@ class Zoo(PermTarget):
     pass
 
 
-class Cage(PermTarget):
+class Exhibit(PermTarget):
     zoo = models.ForeignKey(Zoo)
 
 
 class Animal(PermTarget):
-    cage = models.ForeignKey(Cage)
+    exhibit = models.ForeignKey(Exhibit)

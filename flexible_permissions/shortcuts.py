@@ -1,5 +1,7 @@
+# Include NOFILTER and ISNULL as part of the public api
 from flexible_permissions._utils import (
     NOFILTER,
+    ISNULL,
     get_multi_crud_query,
     get_single_crud_kwargs,
 )

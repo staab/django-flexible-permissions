@@ -3,7 +3,6 @@ from django.db.models import Q, QuerySet
 from itertools import chain
 
 from flexible_permissions.agents import normalize_agent
-from flexible_permissions.models import Permission
 from flexible_permissions.relations import (
     get_related_target_prefixes,
     get_related_agent_prefixes,
@@ -31,6 +30,14 @@ def filter_isnull(key, prefix):
 
     # Return just a null check
     return Q(**{get_key(key, prefix, 'isnull'): True})
+
+
+def is_value(value):
+    return value not in [ISNULL, NOFILTER]
+
+
+def normalize_value(value, fn=ensure_plural, *args, **kwargs):
+    return fn(value, *args, **kwargs) if is_value(value) else value
 
 
 def define_filter(key):
@@ -78,7 +85,13 @@ class PermQuerySet(QuerySet):
     def _get_target_query(self, target, prefix):
         return self._get_filter(get_key('target', prefix), target)
 
-    def _get_query(self, role=NOFILTER, agent=NOFILTER, target=NOFILTER, prefix=None):
+    def _get_query(
+        self,
+        role=NOFILTER,
+        agent=NOFILTER,
+        target=NOFILTER,
+        prefix=None
+    ):
         """
         This constructs a query for the filter on permissions.
         """
@@ -140,12 +153,17 @@ class PermQuerySet(QuerySet):
         Either agent or target can be provided. It's assumed that the
         queryset to be retrieved is the thing not provided.
         """
-        # Normalize roles
-        if roles is not ISNULL:
-            roles = ensure_plural(roles)
+        # Normalize inputs
+        roles = normalize_value(roles)
+        agent = normalize_value(agent)
+        target = normalize_value(target)
 
         # Get all possible related queries we're doing
-        related_prefixes = get_related_prefixes(self, perms_name, *roles)
+        related_prefixes = (
+            get_related_prefixes(self, perms_name, *roles)
+            if is_value(roles) else
+            [perms_name]
+        )
 
         # Create a query for each related prefix
         queries = [
@@ -185,9 +203,11 @@ class PermTargetQuerySet(PermQuerySet):
         """
         result = []
         for value in ensure_plural(values):
-            assert "." not in value, (
-                "Prefixes are inferred. Register this with its own actions."
-            )
+            if "." in value:
+                raise ValueError(
+                    "Prefixes are inferred. Register this with its own "
+                    "actions."
+                )
 
             result.append("%s.%s" % (self._get_action_prefix(), value))
 
@@ -206,16 +226,16 @@ class PermTargetQuerySet(PermQuerySet):
         infer_agents is an optimization. If you know you don't need the
         authority of any related agents, set it to false.
         """
-        # Get any derivative agents
-        if agent is not ISNULL:
-            agent = normalize_agent(agent, infer_agents=infer_agents)
-
         return self._query_perms(
             roles=roles,
             get_related_prefixes=get_related_target_prefixes,
             perms_name='target_perms',
             force_separate=force_separate,
-            agent=agent
+            agent=normalize_value(
+                agent,
+                normalize_agent,
+                infer_agents=infer_agents
+            )
         )
 
     def for_action(self, actions=NOFILTER, *args, **kwargs):
