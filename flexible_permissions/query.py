@@ -17,6 +17,7 @@ from flexible_permissions._utils import (
     filter_isnull,
     is_value,
     normalize_value,
+    get_model_name,
 )
 
 
@@ -169,23 +170,23 @@ class PermTargetQuerySet(PermQuerySet):
     via the permissions table. The methods should be read as
     "Get a target for an agent with role x."
     """
-    def _get_action_prefix(self):
-        return self.model._meta.verbose_name.replace(' ', '_')
-
-    def _prefix_actions(self, values):
+    def _prefix_actions(self, actions):
         """
         Prepend this model's name as prefix. This enforces more correct
         configuration when registering role/action mappings.
         """
+        if not is_value(actions):
+            return actions
+
         result = []
-        for value in ensure_plural(values):
-            if "." in value:
+        for action in ensure_plural(actions):
+            if "." in action:
                 raise ValueError(
                     "Prefixes are inferred. Register this with its own "
                     "actions."
                 )
 
-            result.append("%s.%s" % (self._get_action_prefix(), value))
+            result.append("%s.%s" % (get_model_name(self.model), action))
 
         return result
 
@@ -225,10 +226,38 @@ class PermAgentQuerySet(PermQuerySet):
     via the permissions table. The methods should be read as
     "Get an agent with role x and target y."
     """
+    def _validate_actions(self, actions):
+        if not is_value(actions):
+            return actions
+
+        actions = normalize_value(actions)
+
+        if [action for action in actions if "." not in action]:
+            raise ValueError("Prefixes are required since target is optional.")
+
+        return actions
+
+    def _validate_targets(self, roles, target):
+        if not is_value(roles) or not is_value(target):
+            return
+
+        for target in normalize_value(target):
+            target_name = get_model_name(target)
+
+            for role in normalize_value(roles):
+                role_name = role.split(".")[0]
+                if role_name != target_name:
+                    raise ValueError("Role %s is invalid for %s" % (
+                        role_name,
+                        target_name
+                    ))
+
     def with_role(self, roles=ANY, target=ANY, force_separate=False):
         """
         This filters permission agents by the given target.
         """
+        self._validate_targets(roles, target)
+
         return self._query_perms(
             roles=roles,
             get_related_prefixes=get_related_agent_prefixes,
@@ -238,5 +267,5 @@ class PermAgentQuerySet(PermQuerySet):
         )
 
     def with_action(self, actions=ANY, *args, **kwargs):
-        roles = normalize_value(actions, actions_to_roles)
+        roles = actions_to_roles(self._validate_actions(actions))
         return self.with_role(roles, *args, **kwargs)

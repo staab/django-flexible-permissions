@@ -1,4 +1,4 @@
-from flexible_permissions._utils import ensure_plural
+from flexible_permissions._utils import ensure_plural, is_value
 
 """
 Maps of roles to actions
@@ -39,10 +39,18 @@ def register_role(name, actions):
 
 
 def roles_to_actions(roles):
+    # Keep special values
+    if not is_value(roles):
+        return roles
+
     roles = ensure_plural(roles)
     return list(set([action for role in roles for action in ROLES[role]]))
 
 
 def actions_to_roles(actions):
+    # Keep special values
+    if not is_value(actions):
+        return actions
+
     actions = ensure_plural(actions)
     return list(set([role for action in actions for role in ACTIONS[action]]))

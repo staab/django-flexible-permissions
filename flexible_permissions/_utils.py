@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.db.models import Q
 
 import operator
@@ -49,6 +50,26 @@ def ensure_plural(value, remove_nones=True):
 
     return value
 
+
+def get_model_class(value):
+    if isinstance(value, ContentType):
+        model_class = value.model_class()
+    elif isinstance(value, models.Model):
+        model_class = value.__class__
+    elif isinstance(value, models.QuerySet):
+        model_class = value.model
+    elif issubclass(value, models.Model):
+        model_class = value
+    elif issubclass(value, models.BaseManager):
+        model_class = value.model
+    else:
+        raise TypeError("Invalid value passed: %s" % value)
+
+    return model_class
+
+
+def get_model_name(value):
+    return get_model_class(value)._meta.verbose_name.replace(' ', '_')
 
 """
 Generic query building functions
