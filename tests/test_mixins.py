@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from tests.models import User, Zoo
+from tests.models import User, Zoo, Exhibit
 from tests.utils import create_test_models
 
 
@@ -53,6 +53,10 @@ class TargetTestCase(TestCase):
     def test_for_action(self):
         admin = User.objects.get(name='admin user')
 
+        # For requires unprefixed
+        with self.assertRaises(ValueError):
+            Zoo.objects.for_action('zoo.open', admin)
+
         results = Zoo.objects.for_action('open', admin)
         self.assertEqual(1, results.count())
 
@@ -75,6 +79,7 @@ class AgentTestCase(TestCase):
 
     def test_with_role_filter_target(self):
         zoo = Zoo.objects.first()
+        exhibit = Exhibit.objects.first()
         admin = User.objects.get(name='admin user')
 
         # Normal call
@@ -85,6 +90,10 @@ class AgentTestCase(TestCase):
         results = User.objects.with_role(target=zoo)
         self.assertEqual(1, results.count())
 
+        # Relational permission query
+        results = User.objects.with_role('zoo.admin', exhibit)
+        self.assertEqual(1, results.count())
+
         # Invalid role
         results = User.objects.with_role('invalid', zoo)
         self.assertEqual(0, results.count())
@@ -92,3 +101,14 @@ class AgentTestCase(TestCase):
         # Invalid target
         results = User.objects.with_role('zoo.admin', admin)
         self.assertEqual(0, results.count())
+
+    def test_action(self):
+        zoo = Zoo.objects.first()
+        admin = User.objects.get(name='admin user')
+
+        # With requires prefixes
+        with self.assertRaises(ValueError):
+            User.objects.with_action('open', zoo)
+
+        results = User.objects.with_action('zoo.open', zoo)
+        self.assertEqual(1, results.count())

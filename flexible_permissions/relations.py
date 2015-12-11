@@ -1,3 +1,10 @@
+from flexible_permissions._utils import (
+    get_model_class,
+    ensure_plural,
+    is_value,
+    invert,
+)
+
 _relation_registry = {}
 
 
@@ -20,30 +27,47 @@ def get_relation_paths(cls):
     return results
 
 
-def get_related_target_prefixes(queryset, perms_name, *roles):
-    paths = get_relation_paths(queryset.model)
+def _get_model_class(target):
+    if not is_value(target):
+        return None
+
+    model_classes = list(set(map(get_model_class, ensure_plural(target))))
+
+    if len(model_classes) > 1:
+        raise ValueError("Heterogenous targets not allowed.")
+
+    return model_classes[0]
+
+
+def get_related_paths_by_role(model_class, roles):
+    """
+    Select what paths to used based on what roles were passed.
+    The first part of the role should be the key for the path
+    to the object associated with that role.
+    """
+    role_prefixes = [
+        role.split(".")[0]
+        for role in filter(invert(is_value), ensure_plural(roles))
+    ]
+
+    return [
+        path for key, path in get_relation_paths(model_class).items()
+        if key in role_prefixes
+    ]
+
+
+def get_related_prefixes(combine, perms_name, roles, origin, relation):
+    """
+    Gets prefixes for inferring relations from the origin to the relation
+    """
     prefixes = []
 
-    if perms_name in queryset.model._meta.get_all_field_names():
+    # If the origin has a relation to Permission, add the perms_name in
+    if perms_name in _get_model_class(origin)._meta.get_all_field_names():
         prefixes.append(perms_name)
 
-    for role in roles:
-        role_prefix = role.split(".")[0]
-
-        # Add in the path to the related object, plus perm
-        if role_prefix in paths:
-            if not isinstance(paths[role_prefix], list):
-                paths[role_prefix] = [paths[role_prefix]]
-            for path in paths[role_prefix]:
-                prefixes.append(path + '__' + perms_name)
-
-    return set(prefixes)
-
-
-def get_related_agent_prefixes(queryset, perms_name, *roles):
-    prefixes = []
-
-    if perms_name in queryset.model._meta.get_all_field_names():
-        prefixes.append(perms_name)
+    # Add all prefixes based on roles relevant for the relation
+    for path in get_related_paths_by_role(_get_model_class(relation), roles):
+        prefixes.append(combine('__', perms_name, path))
 
     return set(prefixes)

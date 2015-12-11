@@ -1,12 +1,10 @@
 from django.db.models import Q, QuerySet
 
 from itertools import chain
+from functools import partial
 
 from flexible_permissions.agents import normalize_agent
-from flexible_permissions.relations import (
-    get_related_target_prefixes,
-    get_related_agent_prefixes,
-)
+from flexible_permissions.relations import get_related_prefixes
 from flexible_permissions.roles import actions_to_roles
 from flexible_permissions._utils import (
     ANY,
@@ -17,6 +15,8 @@ from flexible_permissions._utils import (
     filter_isnull,
     is_value,
     normalize_value,
+    str_prepend,
+    str_append,
 )
 
 
@@ -110,9 +110,10 @@ class PermQuerySet(QuerySet):
             self.none()
         )
 
-    def _query_perms(self,
+    def _query_perms(
+        self,
         roles,
-        get_related_prefixes,
+        prefixes,
         perms_name,
         force_separate,
         agent=ANY,
@@ -134,25 +135,20 @@ class PermQuerySet(QuerySet):
         agent = normalize_value(agent)
         target = normalize_value(target)
 
-        # Get all possible related queries we're doing
-        related_prefixes = (
-            get_related_prefixes(self, perms_name, *roles)
-            if is_value(roles) else
-            [perms_name]
-        )
-
         # Create a query for each related prefix
         queries = [
             self._get_query(roles, agent, target, prefix=prefix)
-            for prefix in related_prefixes
+            for prefix in prefixes
         ]
+
+        print queries
 
         # Aggregate the queries. Query together if we don't have any
         # divergent left joins.
         query_together = (
             not force_separate and
-            len(related_prefixes) <= 1 and
-            perms_name in related_prefixes
+            len(prefixes) <= 1 and
+            perms_name in prefixes
         )
 
         if query_together:
@@ -202,10 +198,19 @@ class PermTargetQuerySet(PermQuerySet):
         infer_agents is an optimization. If you know you don't need the
         authority of any related agents, set it to false.
         """
+        perms_name = 'target_perms'
+        prefixes = get_related_prefixes(
+            str_append,
+            perms_name,
+            roles,
+            self,
+            self
+        )
+
         return self._query_perms(
             roles=roles,
-            get_related_prefixes=get_related_target_prefixes,
-            perms_name='target_perms',
+            prefixes=prefixes,
+            perms_name=perms_name,
             force_separate=force_separate,
             agent=normalize_value(
                 agent,
@@ -229,10 +234,19 @@ class PermAgentQuerySet(PermQuerySet):
         """
         This filters permission agents by the given target.
         """
+        perms_name = 'agent_perms'
+        prefixes = get_related_prefixes(
+            str_prepend,
+            perms_name,
+            roles,
+            self,
+            target
+        )
+
         return self._query_perms(
             roles=roles,
-            get_related_prefixes=get_related_agent_prefixes,
-            perms_name='agent_perms',
+            prefixes=prefixes,
+            perms_name=perms_name,
             force_separate=force_separate,
             target=target
         )

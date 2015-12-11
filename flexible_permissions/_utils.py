@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.db.models import Q
 
 import operator
@@ -36,6 +37,13 @@ def identity(value):
     return value
 
 
+def invert(fn):
+    def check(value):
+        return not fn(value)
+
+    return fn
+
+
 def ensure_plural(value, remove_nones=True):
     """
     If value is singular, wraps it in an array.
@@ -48,6 +56,40 @@ def ensure_plural(value, remove_nones=True):
         value = filter(identity, value)
 
     return value
+
+
+def if_plural(value, fn):
+    if is_plural(value):
+        result = map(fn, value)
+    else:
+        result = fn(value)
+
+    return result
+
+
+def get_model_class(value):
+    if isinstance(value, ContentType):
+        model_class = value.model_class()
+    elif isinstance(value, models.Model):
+        model_class = value.__class__
+    elif isinstance(value, models.QuerySet):
+        model_class = value.model
+    elif issubclass(value, models.Model):
+        model_class = value
+    elif issubclass(value, models.BaseManager):
+        model_class = value.model
+    else:
+        raise TypeError("Invalid value passed: %s" % value)
+
+    return model_class
+
+
+def str_prepend(delimiter, prefix, value):
+    return "%s%s%s" % (prefix, delimiter, value)
+
+
+def str_append(delimiter, suffix, value):
+    return "%s%s%s" % (value, delimiter, suffix)
 
 
 """
