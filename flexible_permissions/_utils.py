@@ -121,6 +121,10 @@ def normalize_value(value, fn=ensure_plural, *args, **kwargs):
     return fn(value, *args, **kwargs) if is_value(value) else value
 
 
+def normalize_values(*values):
+    return map(normalize_value, values)
+
+
 def generic_in(key, items):
     """
     Creates a the equivalent of an __in query for the given items.

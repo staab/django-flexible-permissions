@@ -15,6 +15,7 @@ from flexible_permissions._utils import (
     filter_isnull,
     is_value,
     normalize_value,
+    normalize_values,
     str_prepend,
     str_append,
 )
@@ -131,9 +132,7 @@ class PermQuerySet(QuerySet):
         queryset to be retrieved is the thing not provided.
         """
         # Normalize inputs
-        roles = normalize_value(roles)
-        agent = normalize_value(agent)
-        target = normalize_value(target)
+        roles, agent, target = normalize_values(roles, agent, target)
 
         # Create a query for each related prefix
         queries = [
@@ -141,17 +140,9 @@ class PermQuerySet(QuerySet):
             for prefix in prefixes
         ]
 
-        print queries
-
         # Aggregate the queries. Query together if we don't have any
         # divergent left joins.
-        query_together = (
-            not force_separate and
-            len(prefixes) <= 1 and
-            perms_name in prefixes
-        )
-
-        if query_together:
+        if not force_separate and len(prefixes) <= 1:
             results = self._query_together(queries)
         else:
             results = self._query_separate(queries)
