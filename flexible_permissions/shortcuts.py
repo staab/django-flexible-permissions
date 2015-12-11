@@ -2,6 +2,7 @@
 from flexible_permissions._utils import (
     ANY,
     NULL,
+    validate_roles_with_targets,
     get_multi_crud_query,
     get_single_crud_kwargs,
 )
@@ -25,14 +26,17 @@ Create
 """
 
 
-def add_perm(*args, **kwargs):
+def add_perm(role, agent, target):
     """
     Adds a single Permission matching the arguments.
     Accepts role, agent, and target kwargs.
     If the Permission already exists, it will retrieve it instead.
     """
+    # Make sure we're not adding bad data
+    validate_roles_with_targets(role, target)
+
     # If it already exists, this is a duplicate, so ignore it.
-    query_kwargs = get_single_crud_kwargs(*args, **kwargs)
+    query_kwargs = get_single_crud_kwargs(role, agent, target)
     return Permission.objects.get_or_create(**query_kwargs)[0]
 
 

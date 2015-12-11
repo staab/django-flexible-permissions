@@ -117,6 +117,22 @@ def generic_in(key, items):
     return reduce(operator.or_, clauses, Q(**{'id__isnull': True}))
 
 
+def validate_roles_with_targets(roles, targets):
+    if not is_value(roles) or not is_value(targets):
+        return
+
+    for target in normalize_value(targets):
+        target_name = get_model_name(target)
+
+        for role in normalize_value(roles):
+            role_name = role.split(".")[0]
+            if role_name != target_name:
+                raise ValueError("Role %s is invalid for %s" % (
+                    role_name,
+                    target_name
+                ))
+
+
 def get_single_crud_kwargs(role, agent, target):
     """
     Gets a dict for filtering Permissions by Role, Agent, and Target.

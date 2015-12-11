@@ -10,6 +10,7 @@ from flexible_permissions._utils import (
     is_value,
     normalize_value,
     generic_in,
+    validate_roles_with_targets,
     get_single_crud_kwargs,
     get_multi_crud_query,
 )
@@ -61,6 +62,24 @@ class UtilsTestCase(TestCase):
         exhibits = Exhibit.objects.all()
         permissions = Permission.objects.filter(generic_in('target', exhibits))
         self.assertEqual(1, permissions.count())
+
+    def test_validate_roles_with_targets(self):
+        zoo = Zoo.objects.first()
+        exhibit = Exhibit.objects.first()
+
+        # Singular
+
+        validate_roles_with_targets('zoo.open', zoo)
+
+        with self.assertRaises(ValueError):
+            validate_roles_with_targets('zoo.open', exhibit)
+
+        # Plural
+
+        validate_roles_with_targets(['zoo.open'], [zoo])
+
+        with self.assertRaises(ValueError):
+            validate_roles_with_targets(['zoo.open'], [exhibit])
 
     def test_get_single_crud_kwargs(self):
         role = 'zoo.admin'
